@@ -1,0 +1,101 @@
+/*
+ * This program emulates OP_TXHASH_VERIFY.
+ *
+ * The program is a showcase of what could be possible.
+ * It does not compile because of missing syntax.
+ */
+
+let mut sha2_ctx = jet_sha_256_ctx_8_init();
+
+/* Transaction field selection */
+let wit_version;
+if let True = wit_version {
+    sha2_ctx = jet_sha_256_ctx_8_add_4(sha2_ctx, jet_version());
+}
+let wit_locktime;
+if let True = wit_locktime {
+    sha2_ctx = jet_sha_256_ctx_8_add_4(sha2_ctx, jet_lock_time());
+}
+let wit_current_index;
+if let True = wit_current_index {
+    sha2_ctx = jet_sha_256_ctx_8_add_4(sha2_ctx, jet_current_index());
+}
+let wit_current_control_block;
+if let True = wit_current_control_block {
+    sha2_ctx = jet_sha_256_ctx_8_add_32(sha2_ctx, jet_tap_env_hash());
+}
+let wit_inputs;
+let wit_outputs;
+// TODO Support recursively hashing the TxFieldSector via the control bit
+
+/* Input / output field selection */
+if matches!(wit_inputs, True) || matches!(wit_outputs, True) {
+    let wit_spent_outpoints;    
+    let wit_input_sequences;    
+    let wit_input_script_sigs;    
+    let wit_input_script_pubkeys;    
+    let wit_spent_amounts;    
+    let wit_input_annexes;    
+    let wit_output_script_pubkeys;    
+    let wit_output_amounts;    
+}
+
+/* Input selection */
+if let True = wit_inputs {
+    /* FIXME Only individual inputs at absolute indices can be selected */
+    /* TODO Support relative indices */
+    /* TODO Support leading mode */
+
+    /* List of absolute input indices */
+    let wit_input_indices: [u32];
+
+    for index in wit_input_indices {
+        if let True = wit_spent_outpoints {
+            // ? operator unwraps Some(Outpoint) and fails upon None
+            sha2_ctx = jet_outpoint_hash(sha2_ctx, jet_input_prev_outpoint(index)?);
+        }
+        if let True = wit_input_sequences {
+            sha2_ctx = jet_sha_256_ctx_8_add_4(sha2_ctx, jet_input_sequence(index)?);
+        }
+        if let True = wit_input_script_sigs {
+            // FIXME Missing `jet_input_script_sig_hash`
+            sha2_ctx = jet_sha_256_ctx_8_add_4(sha2_ctx, jet_input_script_sig_hash(index)?);
+        }
+        if let True = wit_input_script_pubkeys {
+            sha2_ctx = jet_sha_256_ctx_8_add_4(sha2_ctx, jet_input_script_hash(index)?);
+        }
+        if let True = wit_input_spent_amounts {
+            sha2_ctx = jet_asset_amount_hash(sha2_ctx, jet_input_amount(index)?);
+        }
+        if let True = wit_input_annexes {
+            // Fail if input does not exist
+            // Skip input if it has no annex
+            if let Some(hash) = jet_input_annex_hash(index)? {
+                sha2_ctx = jet_sha_256_ctx_8_add_4(sha2_ctx, hash);
+            }
+        }
+    }
+}
+
+/* Output selection */
+if let True = wit_output {
+    /* FIXME Only individual outputs at absolute indices can be selected */
+    /* TODO Support relative indices */
+    /* TODO Support leading mode */
+
+    /* List of absolute output indices */
+    let wit_output_indices: [u32];
+
+    for index in wit_output_indices {
+        if let True = wit_output_script_pubkeys {
+            jet_sha_256_ctx_8_add_32(sha2_ctx, jet_output_script_hash(index)?);
+        }
+        if let True = wit_output_amounts {
+            sha2_ctx = jet_asset_amount_hash(sha2_ctx, jet_input_amount(index)?); 
+        }
+    }
+}
+
+let expected_hash: u258 = 0xf57f15937068d3054a4f437ac95cba65bae3c1b0529a84caa29d40200bf49c85;
+let hash = jet_sha_256_ctx_8_finalize(sha2_ctx);
+jet_verify(jet_eq_256(hash, hash_expected));
